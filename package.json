@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@instantdb/react": "^0.12.11",
+    "@react-oauth/google": "^0.12.1",
+    "chess.js": "^1.0.0-beta.8",
+    "js-cookie": "^3.0.5",
+    "next": "latest",
+    "react": "^18.2.0",
+    "react-chessboard": "^4.7.1",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.26.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.10.8",
+    "@types/react": "18.2.47",
+    "@types/react-dom": "18.2.18",
+    "typescript": "^5.3.3"
+  }
+}
