@@ -47,7 +47,8 @@ function App() {
 
   if (res.isLoading || res.error){}
   else {
-    if (res.data.game.length == 0) {
+    if(!cookieData && typeof window !== 'undefined' ) window.location.href = "https://instantgames.org";
+    else if (res.data.game.length == 0) {
       console.log("no game found.");
       if (typeof window !== 'undefined') window.location.href = "https://instantgames.org/home";
     }

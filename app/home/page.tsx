@@ -140,6 +140,7 @@ function signOut(){
 }
 
 function findOpponent(opponents: Queue[], userEmail: string, userID: string){
+  opponents = opponents.filter(item => item["email"] !== userEmail);
   if(opponents.length > 0){
     // opponents[0] - battle will be legendary!
     // remove opponents[0] from the queue
