@@ -8,7 +8,7 @@ import Cookies from 'js-cookie';
 import { googleLogout } from '@react-oauth/google';
 
 // ID for app: instant-chess
-const APP_ID = '#APPID'
+const APP_ID = 'INSTANTDB-APP-ID'
 
 // Optional: Declare your schema for intellisense!
 type Schema = {
@@ -30,8 +30,8 @@ function App() {
   const cookieData = Cookies.get('userData');  
   let userInfo = null;
   let playersOnline = [];
-  if(!cookieData)
-    window.location.href = "http://localhost:3000";
+  if(!cookieData && typeof window !== 'undefined')
+    window.location.href = "https://instantgames.org";
 
   useEffect(() => {
     if(cookieData){
@@ -68,7 +68,7 @@ function App() {
   };
   const redirect = async(gameAvailable: Game[]) => {
     await sleep(2000);
-    if(gameAvailable.length > 0) window.location.href = "http://localhost:3000/play";
+    if(gameAvailable.length > 0 && typeof window !== 'undefined' ) window.location.href = "https://instantgames.org/play";
   };
   if (res.isLoading || res.error){}
   else {

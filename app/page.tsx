@@ -9,14 +9,14 @@ import Cookies from 'js-cookie';
 import { googleLogout } from '@react-oauth/google';
 
 // ID for app: instant-chess
-const APP_ID = '#APPID'
+const APP_ID = 'INSTANTDB-APP-ID'
 
 // Optional: Declare your schema for intellisense!
 type Schema = {
   users: User
 }
 
-const GOOGLE_CLIENT_ID = '#CLIENT_ID';
+const GOOGLE_CLIENT_ID = 'GOOGLECLIENTID';
 
 // Use the google client name in the Instant dashboard auth tab
 const GOOGLE_CLIENT_NAME = 'instant-chess';
@@ -37,7 +37,7 @@ function App() {
   else if (user){
     addUser(user.id, user.email);
     Cookies.set('userData', JSON.stringify({"id": user.id , "email":user.email}), { expires: 7 });  
-    window.location.href += "/home";
+    if (typeof window !== 'undefined') window.location.href += "/home";
   }
   return (
     <div style={styles.container}>
@@ -59,7 +59,11 @@ function App() {
 }
 
 function Login() {
-  const [nonce] = useState(crypto.randomUUID());
+  const [nonce] = useState(() =>
+    Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+      byte.toString(16).padStart(2, '0')
+    ).join('')
+  ); // useState(crypto.randomUUID());
 
   return (
     <div> <h3> Welcome to Instant-Chess!</h3><br></br>

@@ -6,8 +6,9 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import Cookies from 'js-cookie';
 
+
 // ID for app: instant-chess
-const APP_ID = '#APPID'
+const APP_ID = 'INSTANTDB-APP-ID'
 
 // Optional: Declare your schema for intellisense!
 type Schema = {
@@ -48,7 +49,7 @@ function App() {
   else {
     if (res.data.game.length == 0) {
       console.log("no game found.");
-      window.location.href = "http://localhost:3000/home";
+      if (typeof window !== 'undefined') window.location.href = "https://instantgames.org/home";
     }
     else {
       gameData = res.data.game[0];
@@ -109,7 +110,7 @@ function App() {
         else { winID = gameData["user2id"]; loseID = gameData["user1id"]; }
         db.transact(tx.game[gameData["id"]].update({state: "end", winner: winColor })) ;
       }
-      window.location.href = "http://localhost:3000/home";
+      if (typeof window !== 'undefined') window.location.href = "https://instantgames.org/home";
     }
     // else
     return (

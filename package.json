@@ -1,12 +1,12 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev --turbo --hostname 0.0.0.0",
     "build": "next build",
-    "start": "next start"
+    "start": "next start --hostname 0.0.0.0"
   },
   "dependencies": {
-    "@instantdb/react": "^0.12.11",
+    "@instantdb/react": "^0.12.26",
     "@react-oauth/google": "^0.12.1",
     "chess.js": "^1.0.0-beta.8",
     "js-cookie": "^3.0.5",
@@ -14,7 +14,8 @@
     "react": "^18.2.0",
     "react-chessboard": "^4.7.1",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.26.1"
+    "react-router-dom": "^6.26.1",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@types/node": "20.10.8",
