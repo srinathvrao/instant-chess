@@ -1,5 +1,9 @@
 # Instant-Chess
 
+It's live! [instantgames.org](https://instantgames.org/)
+
+Up next: turn indicators + play against AI.
+
 Run this npm install command to set stuff up for development:
 
 ```bash
