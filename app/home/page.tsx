@@ -24,6 +24,7 @@ function App() {
   
   const [userID , setUserID ] = useState("");
   const [userEmail , setUserEmail ] = useState("");
+  const [isGuest , setIsGuest ] = useState(false);
   let winCount = 0;
   let drawCount = 0;
   let loseCount = 0;
@@ -38,6 +39,7 @@ function App() {
       let cookie = JSON.parse(cookieData);
       setUserID(cookie["id"]);
       setUserEmail(cookie["email"]);
+      setIsGuest(cookie["guest"]);
     }
   }, [cookieData]);
 
@@ -104,7 +106,7 @@ function App() {
     <div style={styles.container}>
     <div style={styles.board}>
         <h4>
-          Hello, {userEmail}! <br></br>
+        Hello, {userEmail.includes("Guest") ?  userEmail.split("@")[0].slice(0,11) : userEmail.split("@")[0] }! <br></br>
         Number of players in queue: {playersOnline.length}
         <br></br>
         <br></br>
@@ -118,12 +120,12 @@ function App() {
         <input value='Join Queue!' onClick={() => findOpponent(playersOnline, userEmail, userID)} type='button'></input>
         <br></br>
         <br></br>
-        <input value='Sign Out' onClick={() => signOut()} type='button' />
+        <input value='Sign Out' onClick={() => signOut(userID)} type='button' />
         </h4>
          <br></br>
     </div>
     <div style={ styles.info }>
-    This application uses Cookies to store your login information, <br /> and does not need/record passwords.
+    { isGuest ? "Guest sessions are deleted in 30 days, or if cookies are cleared, or if you sign out. Have fun! :)" : "" }
     </div>
     
   </div>
@@ -133,23 +135,32 @@ function App() {
 // Write Data
 // ---------
 
-function signOut(){
+function signOut(userID: string){
+  db.transact(tx.queue[userID].delete());
+  if(!Cookies.get('userData')["guest"]){
   Cookies.remove('userData');
   db.auth.signOut();
   googleLogout();
+  }
+  else{
+    Cookies.remove('userData');
+    window.location.href = "http://localhost:3000/";
+  }
+
+  
 }
 
 function findOpponent(opponents: Queue[], userEmail: string, userID: string){
-  opponents = opponents.filter(item => item["email"] !== userEmail);
-  if(opponents.length > 0){
+  let filtered = opponents.filter(item => item["email"] !== userEmail);
+  if(filtered.length > 0){
     // opponents[0] - battle will be legendary!
     // remove opponents[0] from the queue
-    db.transact(tx.queue[opponents[0]["id"]].delete())
+    db.transact(tx.queue[filtered[0]["id"]].delete())
     // create a game entry between userID and opponents[0]
     db.transact(tx.game[id()].update({
-                              w: opponents[0]["email"],
+                              w: filtered[0]["email"],
                               b: userEmail,
-                              user1id: opponents[0]["id"],
+                              user1id: filtered[0]["id"],
                               user2id: userID,
                               turn: "w",
                               fen: (new Chess()).fen(),
@@ -157,7 +168,7 @@ function findOpponent(opponents: Queue[], userEmail: string, userID: string){
                               winner: "",
                             }))
   }
-  else{
+  else if(opponents.length == 0){
     // no opponent found, make current user join queue
     db.transact(
       tx.queue[userID].update({
@@ -165,6 +176,9 @@ function findOpponent(opponents: Queue[], userEmail: string, userID: string){
       })
     )
     alert("You've joined the queue. Searching for an opponent... You can close this box");
+  }
+  else{
+    alert("You've already joined the queue.");
   }
 }
 

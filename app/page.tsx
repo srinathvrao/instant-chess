@@ -36,9 +36,10 @@ function App() {
   }
   else if (user){
     addUser(user.id, user.email);
-    Cookies.set('userData', JSON.stringify({"id": user.id , "email":user.email}), { expires: 7 });  
+    Cookies.set('userData', JSON.stringify({"id": user.id , "email":user.email, "guest":false}), { expires: 7 });  
     if (typeof window !== 'undefined') window.location.href += "/home";
   }
+  else
   return (
     <div style={styles.container}>
     <div style={styles.board}>
@@ -54,8 +55,14 @@ function App() {
   </div>
   );
   
+}
 
-  
+function continueAsGuest(){
+  const randomuuid = id();
+  let randomemail = "Guest"+randomuuid+"@example.com"
+  addUser(randomuuid, randomemail);
+  Cookies.set('userData', JSON.stringify({"id": randomuuid, "email": randomemail, "guest":true}), { expires: 30 });
+  if (typeof window !== 'undefined') window.location.href += "/home";
 }
 
 function Login() {
@@ -86,6 +93,10 @@ function Login() {
         }}
       />
     </GoogleOAuthProvider>
+
+    <br></br>
+      <br></br>
+      <input value='Continue as a Guest' onClick={() => continueAsGuest()} type='button'></input>
 
     </div>
   );
