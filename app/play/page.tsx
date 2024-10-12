@@ -124,7 +124,7 @@ function App() {
           />
       </div>
       <div style={ styles.info }>
-      Playing against {gameData[getComplement(userColor)].split("@")[0]}.. Good Luck!
+      Playing against {gameData[getComplement(userColor)].split("@")[0].includes("Guest") ? gameData[getComplement(userColor)].split("@")[0].slice(0,11) : gameData[getComplement(userColor)].split("@")[0] }.. Good Luck!
     </div>
     </div>
     );
