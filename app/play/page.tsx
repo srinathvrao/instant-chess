@@ -114,9 +114,12 @@ function App() {
       if (typeof window !== 'undefined') window.location.href = "https://instantgames.org/home";
     }
     // else
+    let oppname = null;
+    if (gameData) 
+      oppname = gameData[getComplement(userColor)].split("@")[0].includes("Guest") ? gameData[getComplement(userColor)].split("@")[0].slice(0,11) : gameData[getComplement(userColor)].split("@")[0] ; 
     return (
       <div style={styles.container}>
-      <div style={styles.board} >
+      <div style={ isMyTurn? styles.boardMyTurn : styles.board } >
         <Chessboard
           boardOrientation = {userColor=="b" ? 'black' : 'white'}
           position={fen}
@@ -124,7 +127,8 @@ function App() {
           />
       </div>
       <div style={ styles.info }>
-      Playing against {gameData[getComplement(userColor)].split("@")[0].includes("Guest") ? gameData[getComplement(userColor)].split("@")[0].slice(0,11) : gameData[getComplement(userColor)].split("@")[0] }.. Good Luck!
+      <h3> {isMyTurn? "It's your turn!" : "Playing against "+oppname+"..."} <br />
+      { game.inCheck() ? ( isMyTurn? "You're in check." : oppname+"'s in Check!" )  : ""}</h3>
     </div>
     </div>
     );
@@ -200,6 +204,14 @@ const styles: Record<string, React.CSSProperties> = {
     boxSizing: 'inherit',
     display: 'flex',
     border: '1px solid lightgray',
+    borderBottomWidth: '0px',
+    width: 'min(90vw, 90vh)',
+    height: 'min(90vw, 90vh)',
+  },
+  boardMyTurn: {
+    boxSizing: 'inherit',
+    display: 'flex',
+    border: '5px solid green',
     borderBottomWidth: '0px',
     width: 'min(90vw, 90vh)',
     height: 'min(90vw, 90vh)',
