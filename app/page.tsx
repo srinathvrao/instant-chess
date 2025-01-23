@@ -1,173 +1,162 @@
 'use client'
 
-import { init, tx, id } from '@instantdb/react'
-import { useState, useEffect } from 'react';
-import { Chessboard } from 'react-chessboard';
+import { id, i, init, InstaQLEntity } from "@instantdb/react";
+import { useState } from 'react';
 import { Chess } from 'chess.js';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
-import { googleLogout } from '@react-oauth/google';
 
 // ID for app: instant-chess
 const APP_ID = 'INSTANTDB-APP-ID'
 
 // Optional: Declare your schema for intellisense!
-type Schema = {
-  users: User
-}
+const schema = i.schema({
+  entities: {
+    game: i.entity({
+      w: i.string(),
+      b: i.string(),
+      turn: i.string(),
+      fen: i.string(),
+      state: i.string(),
+      winner: i.string(),
+    }),
+  },
+});
 
-const GOOGLE_CLIENT_ID = 'GOOGLECLIENTID';
+type Todo = InstaQLEntity<typeof schema, "game">;
+const db = init({ appId: APP_ID, schema });
 
-// Use the google client name in the Instant dashboard auth tab
-const GOOGLE_CLIENT_NAME = 'instant-chess';
+function App() { 
+  if(!Cookies.get('uData'))
+    Cookies.set('uData', JSON.stringify({"id": id()}), { expires: 3 });
+  let winCount = 0;
+  let loseCount = 0;
+  if(Cookies.get('game') && typeof window !== 'undefined')
+    window.location.href += "/play";
 
-const db = init<Schema>({ appId: APP_ID })
-
-function App() {
-  // Read Data
-    
-  const { isLoading, user, error } = db.useAuth();
-
-  if (isLoading) {
-    return <div>Loading...</div>;
+  if(Cookies.get('uData')){
+    let udata = JSON.parse(Cookies.get("uData"));
+    let uID = udata["id"];
+    let query = { game: { 
+                    $: { 
+                      where: {
+                        w:  uID,
+                        state: "end"
+                      }
+                      }}}
+    const { isLoading, error, data }  = db.useQuery(query);
+    if (data) {
+      let endData = data.game;
+      let endLen = endData.length;
+      for (let index = 0; index < endLen; index++) {
+        const element = endData[index];
+        if(element[element["winner"]] == uID) winCount++;
+        else loseCount++;
+      }
+    }
   }
-  else if (error) {
-    return <div>Uh oh! {error.message}</div>;
-  }
-  else if (user){
-    addUser(user.id, user.email);
-    Cookies.set('userData', JSON.stringify({"id": user.id , "email":user.email, "guest":false}), { expires: 7 });  
-    if (typeof window !== 'undefined') window.location.href += "/home";
-  }
-  else
+  
+  const [isHovered, setIsHovered] = useState(false);
+  const [buttonText, setButtonText] = useState("Do it. (EXTREME!)");
   return (
     <div style={styles.container}>
     <div style={styles.board}>
-      <Login />
-    </div>
-    <div style={ styles.info }>
-    <br /> <br />
-    Show some ❤️ by ⭐ing <a href="https://github.com/srinathvrao/instant-chess">This Project</a> on Github! :D
-    <br /> <br />
-    <br /> <br />
-    This application uses Cookies to store just your login information, <br /> and does not need/record passwords.
-    </div>
+      <h2>Feel like challenging stockfish today?</h2>
+        <br></br>
+        <a
+          href="play"
+          style={isHovered ? { ...styles.button, ...styles.hover } : styles.button}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onClick={() => { setButtonText("You've been warned."); sendToPlay()}}
+        >
+          {buttonText}
+        </a>
+        <br></br>
+         <h3>
+        
+          Your stats:
+          <br></br>
+          <br></br>
+          Ws: {winCount}
+          <br></br>
+          Ls: {loseCount}
+         </h3>
+  </div>
+    {/* {loseCount>0 ? <div style={styles.meme}> MEME <br/> </div> : ""} */}
+
   </div>
   );
-  
 }
 
-function continueAsGuest(){
-  const randomuuid = id();
-  let randomemail = "Guest"+randomuuid+"@example.com"
-  addUser(randomuuid, randomemail);
-  Cookies.set('userData', JSON.stringify({"id": randomuuid, "email": randomemail, "guest":true}), { expires: 30 });
-  if (typeof window !== 'undefined') window.location.href += "/home";
+function sendToPlay(){
+  let udata = JSON.parse(Cookies.get("uData"));
+  let userID = udata["id"];
+  let gameID = id();
+  Cookies.set('game', JSON.stringify({"id": gameID, "uid": userID}), { expires: 1 });
+  db.transact(db.tx.game[gameID].update({
+                                w: userID,
+                                b: "STOCKFISH",
+                                turn: "w",
+                                fen: (new Chess()).fen(),
+                                state: "inprogress",
+                                winner: "",
+                              }))
+  if (typeof window !== 'undefined') window.location.href += "/play";
 }
-
-function Login() {
-  const [nonce] = useState(() =>
-    Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
-      byte.toString(16).padStart(2, '0')
-    ).join('')
-  ); // useState(crypto.randomUUID());
-
-  return (
-    <div> <h3> Welcome to Instant-Chess!</h3><br></br>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <GoogleLogin
-        nonce={nonce}
-        onError={() => alert('Login failed')}
-        onSuccess={({ credential }) => {
-          db.auth
-            .signInWithIdToken({
-              clientName: GOOGLE_CLIENT_NAME,
-              idToken: credential,
-              // Make sure this is the same nonce you passed as a prop
-              // to the GoogleLogin button
-              nonce,
-            })
-            .catch((err) => {
-              alert('Uh oh: ' + err.body?.message);
-            });
-        }}
-      />
-    </GoogleOAuthProvider>
-
-    <br></br>
-      <br></br>
-      <input value='Continue as a Guest' onClick={() => continueAsGuest()} type='button'></input>
-
-    </div>
-  );
-}
-
-
-// Write Data
-// ---------
-function addUser(uid: string, email: string){
-  try{
-    db.transact(
-      tx.users[uid].update({
-        online: true,
-        inGame: false,
-        email: email,
-        winCount: 0,
-        drawCount: 0,
-        loseCount: 0
-      })
-    )
-  } catch (error) {
-    console.log(error.message, "error creating",email);
-    return 'error';
-  }
-
-  return uid;
-}
-
-
-// Types
-// ----------
-type User = {
-  id: string
-  email: string
-  online: boolean
-  inGame: boolean
-  winCount: number
-  drawCount: number
-  loseCount: number
-}
-
 
 // Styles
 // ----------
 const styles: Record<string, React.CSSProperties> = {
-  info: {
-    boxSizing: 'inherit',
-    display: 'inline',
-    justifyContent: 'center',
-    textAlign: 'center',
-    alignItems: 'center',
-  },
-  board: {
-    boxSizing: 'inherit',
-    display: 'flex',
-    border: '1px solid lightgray',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 'min(50vw, 50vh)',
-    height: 'min(50vw, 50vh)',
-  },
-  container: {
-    boxSizing: 'border-box',
-    backgroundColor: '#fafafa',
-    fontFamily: 'code, monospace',
-    height: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'column',
-  },
-}
-
+    meme: {
+      boxSizing: 'inherit',
+      display: 'flex',
+      justifyContent: 'center',
+      flexDirection: 'column',
+      textAlign: 'center',
+      border: '1px solid gray',
+      alignItems: 'center',
+      width: 'min(90vw, 70vh)',
+      marginTop: '20px',
+    },
+    board: {
+      boxSizing: 'inherit',
+      display: 'flex',
+      justifyContent: 'center',
+      textAlign: 'center',
+      flexDirection: 'column',
+      alignItems: 'center',
+      width: 'min(50vw, 50vh)',
+      height: 'auto',
+      marginBottom: '20px',
+    },
+    container: {
+      boxSizing: 'border-box',
+      backgroundColor: '#fafafa',
+      fontFamily: '"Press Start 2P", monospace',
+      height: '100vh',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexDirection: 'column',
+    },
+   
+    button: {
+      textDecoration: 'none',
+      fontSize: '18px',
+      fontWeight: 'bold',
+      color: '#fff',
+      backgroundColor: '#6c63ff',
+      padding: '15px 30px',
+      borderRadius: '50px',
+      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      cursor: 'pointer',
+      textAlign: 'center' as const,
+    },
+    hover: {
+      transform: 'scale(1.05)',
+      boxShadow: '0 6px 12px rgba(0, 0, 0, 0.2)',
+    },
+  }
+  
 export default App
