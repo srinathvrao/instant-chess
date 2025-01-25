@@ -139,8 +139,7 @@ function App() {
       <h3>
       { game.isCheckmate() ? ( isMyTurn? "Checkmate! Well played. You're being sent back to the shadow realm (the previous page..)" : "STOCKFISH got owned! Well played." )  : (game.inCheck() ? ( isMyTurn? "You're in check." : "STOCKFISH is in Check!" )  : "")} <br />
       { game.isDraw()? "It's a draw! Well played." : !game.inCheck() ? isMyTurn? "It's your turn!":"STOCKFISH is thinking...": "" } <br />
-      </h3>
-      
+        </h3>
     </div>
     </div>
     );
@@ -208,6 +207,14 @@ const styles: Record<string, React.CSSProperties> = {
     boxSizing: 'inherit',
     display: 'flex',
     border: '5px solid green',
+    width: 'min(90vw, 90vh)',
+    height: 'min(90vw, 90vh)',
+  },
+  boardMyTurn: {
+    boxSizing: 'inherit',
+    display: 'flex',
+    border: '5px solid green',
+    borderBottomWidth: '0px',
     width: 'min(90vw, 90vh)',
     height: 'min(90vw, 90vh)',
   },
