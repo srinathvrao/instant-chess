@@ -1,66 +1,68 @@
 'use client'
 
-import { init, tx, id } from '@instantdb/react'
-import { useMemo, useEffect, useState } from 'react';
+import { i, init, InstaQLEntity } from "@instantdb/react";
+import { useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import Cookies from 'js-cookie';
-
 
 // ID for app: instant-chess
 const APP_ID = 'INSTANTDB-APP-ID'
 
 // Optional: Declare your schema for intellisense!
-type Schema = {
-  users: User,
-  game: Game
-}
+const schema = i.schema({
+  entities: {
+    game: i.entity({
+      w: i.string(),
+      b: i.string(),
+      turn: i.string(),
+      fen: i.string(),
+      state: i.string(),
+      winner: i.string(),
+    }),
+  },
+});
 
-const db = init<Schema>({ appId: APP_ID })
-
+type Todo = InstaQLEntity<typeof schema, "game">;
+const db = init({ appId: APP_ID, schema });
 let winner = null;
 
 function App() {
+  // this App() function is run every time a move is played. Chessboard is reloaded.
 
   let [game, setGame] = useState(null);
   let gameData = null;
   let fen = "";
-  let userColor = "";
   let isMyTurn = false;
-  const cookieData = Cookies.get('userData');
-  const userID =  useMemo( () => getUserIDFromCookie(cookieData), [cookieData] );
-  const userEmail = useMemo( () => getUserEmailFromCookie(cookieData), [cookieData] );
-
-  const res = db.useQuery({game: { 
+  let uID = null;
+  let gID = null;
+  
+  if(Cookies.get("game")){
+    let gdata = JSON.parse(Cookies.get("game"));
+    gID = gdata["id"];
+    uID = gdata["uid"];
+    const res = db.useQuery({game: { 
       $: { 
         limit: 1,
         where: {
-          or: [
-            { w: userEmail },
-            { b: userEmail }
-          ],
           and: [
+            { id: gID },
             { state: 'inprogress' }
           ]
         }
         }}});
 
-  if (res.isLoading || res.error){}
-  else {
-    if(!cookieData && typeof window !== 'undefined' ) window.location.href = "https://instantgames.org";
-    else if (res.data.game.length == 0) {
-      console.log("no game found.");
-      if (typeof window !== 'undefined') window.location.href = "https://instantgames.org/home";
-    }
+    if (res.isLoading || res.error){}
     else {
-      gameData = res.data.game[0];
-      if(gameData['w']==userEmail) userColor = 'w';
-      else userColor = 'b';
-      if (gameData['turn'] == userColor) isMyTurn = true;
-      fen = gameData.fen;
-      game = new Chess(fen);
+      if (res.data.game.length != 0) {
+        gameData = res.data.game[0];
+        if (gameData['turn'] == 'w') isMyTurn = true;
+        fen = gameData.fen;
+        game = new Chess(fen);
+      }
     }
   }
+
 
   const safeGameModify = (change) => {
     let move = null;
@@ -84,51 +86,60 @@ function App() {
     //illegal move 
     if(move == null) return false
     //valid move  
-    let nextTurn = '';
-    if(userEmail == gameData['w']) nextTurn = 'b';
-    else nextTurn = 'w';
     // update the db with game's fen + opponent's turn
-    db.transact(tx.game[gameData["id"]].update({fen: game.fen(), turn: nextTurn}))
+    db.transact(db.tx.game[gameData["id"]].update({fen: game.fen(), turn: 'b'}));
+    // get chessbot's next move, and update the db.
+    fetch('https://6zgfq4kzwc.execute-api.us-east-2.amazonaws.com/prod', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ fen: game.fen() }),
+    })
+      .then(response => response.json())
+      .then(data => {
+        const bestMove = data;
+        if(data){
+          const srcc = bestMove["source"];
+          const trgg = bestMove["target"];
+          move = safeGameModify({
+            from:srcc,
+            to: trgg,
+            promotion:'q'
+          })
+          db.transact(db.tx.game[gameData["id"]].update({fen: game.fen(), turn: 'w'}));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error); 
+      });
     return true;
   }
 
   if (game){
     if(game.isGameOver()){
-      console.log("game over!!")
-      if(game.isDraw()){
-        // update game's information
-        db.transact(tx.game[gameData["id"]].update({state: "end"})) ;
-        // update user stats +1 draw
+      let winColor = "";
+      if(game.isCheckmate())
+        winColor = getComplement(game.turn());
+      if(!Cookies.get("gameover")){
+        Cookies.set("gameover", JSON.stringify({"win": winColor}), { expires: 1 });
+        updateWinner(gID, winColor);
       }
-      if(game.isCheckmate()){
-        let winColor = getComplement(game.turn());
-        let winID = null;
-        let loseID = null;
-        if (winColor == "w") {
-          winID = gameData["user1id"];
-          loseID = gameData["user2id"];
-        }
-        else { winID = gameData["user2id"]; loseID = gameData["user1id"]; }
-        db.transact(tx.game[gameData["id"]].update({state: "end", winner: winColor })) ;
-      }
-      if (typeof window !== 'undefined') window.location.href = "https://instantgames.org/home";
     }
-    // else
-    let oppname = null;
-    if (gameData) 
-      oppname = gameData[getComplement(userColor)].split("@")[0].includes("Guest") ? gameData[getComplement(userColor)].split("@")[0].slice(0,11) : gameData[getComplement(userColor)].split("@")[0] ; 
     return (
       <div style={styles.container}>
       <div style={ isMyTurn? styles.boardMyTurn : styles.board } >
         <Chessboard
-          boardOrientation = {userColor=="b" ? 'black' : 'white'}
+          boardOrientation = 'white'
           position={fen}
           onPieceDrop={onDrop}
           />
       </div>
       <div style={ styles.info }>
-      <h3> {isMyTurn? "It's your turn!" : "Playing against "+oppname+"..."} <br />
-      { game.inCheck() ? ( isMyTurn? "You're in check." : oppname+"'s in Check!" )  : ""}</h3>
+      <h3>
+      { game.isCheckmate() ? ( isMyTurn? "Checkmate! Well played. You're being sent back to the shadow realm (the previous page..)" : "STOCKFISH got owned! Well played." )  : (game.inCheck() ? ( isMyTurn? "You're in check." : "STOCKFISH is in Check!" )  : "")} <br />
+      { game.isDraw()? "It's a draw! Well played." : !game.inCheck() ? isMyTurn? "It's your turn!":"STOCKFISH is thinking...": "" } <br />
+        </h3>
     </div>
     </div>
     );
@@ -142,21 +153,16 @@ function App() {
   
 
 }
-
-function getUserIDFromCookie(cookieData){
-  if(cookieData){
-    let cookie = JSON.parse(cookieData);
-    return  cookie["id"];
-  }
-  return ""
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-function getUserEmailFromCookie(cookieData){
-  if(cookieData){
-    let cookie = JSON.parse(cookieData);
-    return  cookie["email"];
-  }
-  return ""
+async function updateWinner(gID: string, winColor: string){
+  await sleep(5000);
+  db.transact(db.tx.game[gID].update({state: "end", winner: winColor })) ;
+  await sleep(500);
+  Cookies.remove("game");
+  Cookies.remove("gameover");
+  if (typeof window !== 'undefined') window.location.href = "http://localhost:3000";
 }
 
 function getComplement(turnColor: string){
@@ -169,15 +175,6 @@ function getComplement(turnColor: string){
 
 // Types
 // ----------
-type User = {
-  id: string
-  email: string
-  online: boolean
-  inGame: boolean
-  winCount: number
-  drawCount: number
-  loseCount: number
-}
 
 type Game = {
   id: string
@@ -203,8 +200,13 @@ const styles: Record<string, React.CSSProperties> = {
   board: {
     boxSizing: 'inherit',
     display: 'flex',
-    border: '1px solid lightgray',
-    borderBottomWidth: '0px',
+    width: 'min(90vw, 90vh)',
+    height: 'min(90vw, 90vh)',
+  },
+  boardMyTurn: {
+    boxSizing: 'inherit',
+    display: 'flex',
+    border: '5px solid green',
     width: 'min(90vw, 90vh)',
     height: 'min(90vw, 90vh)',
   },
@@ -219,7 +221,7 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     boxSizing: 'border-box',
     backgroundColor: '#fafafa',
-    fontFamily: 'code, monospace',
+    fontFamily: '"Press Start 2P", monospace',
     height: '100vh',
     display: 'flex',
     justifyContent: 'center',
