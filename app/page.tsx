@@ -61,6 +61,9 @@ function App() {
     <div style={styles.container}>
     <div style={styles.board}>
       <h2>Feel like challenging stockfish today?</h2>
+        <div style={styles.wrapper}>
+          <img src="/images/stockfish.png" alt="CHESSGOD.png" style={styles.img} />
+        </div>
         <br></br>
         <a
           href="play"
@@ -107,16 +110,18 @@ function sendToPlay(){
 // Styles
 // ----------
 const styles: Record<string, React.CSSProperties> = {
-    meme: {
-      boxSizing: 'inherit',
+    headerbox: {
       display: 'flex',
-      justifyContent: 'center',
-      flexDirection: 'column',
-      textAlign: 'center',
-      border: '1px solid gray',
+      boxSizing: 'inherit',
+      margin: '0 auto',
       alignItems: 'center',
-      width: 'min(90vw, 70vh)',
-      marginTop: '20px',
+    },
+    img: {
+      height: 'min(30vw,20vh)',
+      display: 'flex-start',
+      flexDirection: 'row',
+      boxSizing: 'inherit',
+      alignSelf: 'flex-start'
     },
     board: {
       boxSizing: 'inherit',

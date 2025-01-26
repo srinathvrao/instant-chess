@@ -31,6 +31,7 @@ function App() {
   // this App() function is run every time a move is played. Chessboard is reloaded.
 
   let [game, setGame] = useState(null);
+  let [stockfishChat, setChat] = useState("I'll play black. You start. GLHF.");
   let gameData = null;
   let fen = "";
   let isMyTurn = false;
@@ -63,14 +64,13 @@ function App() {
     }
   }
 
-
   const safeGameModify = (change) => {
     let move = null;
     try {
       move = game.move(change);
       fen = game.fen();
     } catch (error) {
-      console.log("invalid move / game ended", error.message)
+      // console.log("invalid move / game ended", error.message)
     }
     return move
   }
@@ -94,7 +94,7 @@ function App() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ fen: game.fen() }),
+      body: JSON.stringify({ fen: game.fen(), piece: source+","+target+","+game.get(target).type }),
     })
       .then(response => response.json())
       .then(data => {
@@ -102,11 +102,15 @@ function App() {
         if(data){
           const srcc = bestMove["source"];
           const trgg = bestMove["target"];
+          const trashtalk = bestMove["talk"];
           move = safeGameModify({
             from:srcc,
             to: trgg,
             promotion:'q'
           })
+          if(trashtalk != "nothing")
+            setChat(trashtalk);
+          else setChat("Your move.")
           db.transact(db.tx.game[gameData["id"]].update({fen: game.fen(), turn: 'w'}));
         }
       })
@@ -128,6 +132,7 @@ function App() {
     }
     return (
       <div style={styles.container}>
+        <div style={styles.column}>
       <div style={ isMyTurn? styles.boardMyTurn : styles.board } >
         <Chessboard
           boardOrientation = 'white'
@@ -135,11 +140,15 @@ function App() {
           onPieceDrop={onDrop}
           />
       </div>
-      <div style={ styles.info }>
-      <h3>
+      <div style={styles.headerbox}>
+        <div style={styles.info}>
+        <img src="/images/stockfish.png" alt="CHESSGOD.png" style={styles.img} />
+        <b>
       { game.isCheckmate() ? ( isMyTurn? "Checkmate! Well played. You're being sent back to the shadow realm (the previous page..)" : "STOCKFISH got owned! Well played." )  : (game.inCheck() ? ( isMyTurn? "You're in check." : "STOCKFISH is in Check!" )  : "")} <br />
-      { game.isDraw()? "It's a draw! Well played." : !game.inCheck() ? isMyTurn? "It's your turn!":"STOCKFISH is thinking...": "" } <br />
-        </h3>
+          { game.isDraw()? "It's a draw! Well played." : !game.inCheck() ? isMyTurn? stockfishChat : "...": "" } <br />
+          </b>
+        </div>
+      </div>
     </div>
     </div>
     );
@@ -147,7 +156,7 @@ function App() {
   else
     return (<div style={styles.container}>
       <div style={styles.board}>
-        Loading... Please wait.
+        Loading...
       </div>
     </div>);
   
@@ -190,33 +199,42 @@ type Game = {
 // Styles
 // ----------
 const styles: Record<string, React.CSSProperties> = {
+  headerbox: {
+    height: 'min(15vw,15vh)',
+    lineHeight: '1.2',
+    display: 'flex-start',
+    flexDirection: 'row',
+    boxSizing: 'inherit',
+    margin: '0 auto',
+  },
+  img: {
+    height: 'min(15vw,15vh)',
+    display: 'flex-start',
+    flexDirection: 'row',
+    boxSizing: 'inherit',
+    alignSelf: 'flex-start'
+  },
   info: {
+    paddingTop: '10px',
     boxSizing: 'inherit',
     display: 'flex',
-    justifyContent: 'center',
-    textAlign: 'center',
-    alignItems: 'center',
+    paddingLeft: '10px',
+    lineHeight: '1.2',
   },
   board: {
     boxSizing: 'inherit',
     display: 'flex',
-    width: 'min(90vw, 90vh)',
-    height: 'min(90vw, 90vh)',
+    width: 'min(90vw, 85vh)',
+    height: 'min(90vw, 85vh)',
+    margin: '0 auto',
   },
   boardMyTurn: {
     boxSizing: 'inherit',
     display: 'flex',
     border: '5px solid green',
-    width: 'min(90vw, 90vh)',
-    height: 'min(90vw, 90vh)',
-  },
-  boardMyTurn: {
-    boxSizing: 'inherit',
-    display: 'flex',
-    border: '5px solid green',
-    borderBottomWidth: '0px',
-    width: 'min(90vw, 90vh)',
-    height: 'min(90vw, 90vh)',
+    width: 'min(90vw, 85vh)',
+    height: 'min(90vw, 85vh)',
+    margin: '0 auto',
   },
   container: {
     boxSizing: 'border-box',
@@ -224,10 +242,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: '"Press Start 2P", monospace',
     height: '100vh',
     display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
     flexDirection: 'column',
   },
+  column: {
+    alignSelf: 'center',
+    width: 'min(90vw, 85vh)',
+  }
 }
 
 export default App
