@@ -1,6 +1,10 @@
 # Instant-Chess
 
-It's live! [instantgames.org](https://instantgames.org/)
+What's better than a virtually unbeatable chessbot?
+
+A chessbot with an inflated ego, thanks to [Deepseek](https://api-docs.deepseek.com/)!
+
+You can play against it at [instantgames.org](https://instantgames.org/). Be warned, it may engage in playful banter. No offense intended by me- the creator of this project.
 
 Up next: turn indicators + play against AI.
 
