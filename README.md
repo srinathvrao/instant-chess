@@ -6,7 +6,6 @@ A chessbot with an inflated ego, thanks to [Deepseek](https://api-docs.deepseek.
 
 You can play against it at [instantgames.org](https://instantgames.org/). Be warned, it may engage in playful banter. No offense intended by me- the creator of this project.
 
-Up next: turn indicators + play against AI.
 
 Run this npm install command to set stuff up for development:
 
