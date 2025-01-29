@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from "react";
-import { Chess } from "chess.js";
+import { Chess, Square } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import Cookies from "js-cookie";
 
@@ -39,14 +39,14 @@ const App: React.FC = () => {
       Cookies.set("gameInfo", gameCopy.fen(), { expires: 7 });
       if(!Cookies.get('movesent')){
         Cookies.set('movesent');
-        makeAImove(onDropAI, gameCopy, gameCopy.get(targetSquare).type);
+        makeAImove(onDropAI, gameCopy, gameCopy.get(targetSquare as Square).type);
       }
     }
     return move !== null;
   };
 
   const onDropAI = (gameCopy, sourceSquare: string, targetSquare: string, ttalk: string) => {
-    const move = gameCopy.move({
+	  const move = gameCopy.move({
         from: sourceSquare,
         to: targetSquare,
         promotion: "q",
@@ -62,11 +62,18 @@ const App: React.FC = () => {
   };
   const [isHovered, setIsHovered] = useState(false);
   const [isHovered2, setIsHovered2] = useState(false);
-  if(game.isCheckmate() && !Cookies.get("redirect")){
-    Cookies.set("redirect",1,{expires:1});
-    redirectHome(game.turn());
+  const [isCheckmate, setCheckMate] = useState(false);
+  
+  useEffect(() => {
+	   if(isCheckmate){
+		   redirectHome(game.turn());
+	   } 
+  }, [isCheckmate]);
+  
+  if(game.isCheckmate()){
+	  if (!isCheckmate) setCheckMate(true);
   }
-  return (
+    return (
     <div style={styles.container}>
       <div style={styles.column}>
         <div style={styles.navbar}>
@@ -75,7 +82,7 @@ const App: React.FC = () => {
             style={isHovered ? { ...styles.button, ...styles.hover } : styles.button}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={() => {let newgame = new Chess(); Cookies.set("gameInfo",newgame.fen(), {expires: 7}); Cookies.remove("redirect"); setGame(newgame); setGameState(newgame.fen()); setChat("Your move.");}}
+            onClick={() => {let newgame = new Chess(); Cookies.set("gameInfo",newgame.fen(), {expires: 7}); Cookies.remove("redirect"); setGame(newgame); setGameState(newgame.fen()); setChat("Your move."); setCheckMate(false); }}
           >
           Reset
         </a>
@@ -118,10 +125,12 @@ function clearGame(){
   Cookies.remove("redirect");
 }
 
-async function redirectHome(loser){
-  await sleep(4000);
-  if(loser == "w"){
+function redirectHome(loser){
+console.log(loser);
+if(loser == 'w'){
+	console.log("lost:",loser);
     let losses = 0;
+    console.log(Cookies.get("loss"));
     if(Cookies.get("loss")){
       losses = parseInt(Cookies.get("loss"));
       Cookies.set("loss", losses + 1, {expires:30});
@@ -129,14 +138,14 @@ async function redirectHome(loser){
     else
       Cookies.set("loss", 1, {expires:30});
   }
-  else if(loser == "b"){
+  else if(loser == 'b'){
+	  console.log("win","w");
     let wins = 0;
     if(Cookies.get("win")){
       wins = parseInt(Cookies.get("win"));
       Cookies.set("win", wins + 1, {expires:30});
     }
   }
-  Cookies.remove("redirect");
 }
 
 async function makeAImove(dropAI, gameCopy, cpiece){
@@ -149,12 +158,12 @@ async function makeAImove(dropAI, gameCopy, cpiece){
   })
     .then(response => response.json())
     .then(data => {
-      const bestMove = JSON.parse(data['body']);
+      const bestMove = data;
       if(bestMove){
-        const srcc = bestMove["source"];
+	      const srcc = bestMove["source"];
         const trgg = bestMove["target"];
         const ttalk = bestMove["talk"];
-        dropAI(gameCopy, srcc, trgg, ttalk);
+	dropAI(gameCopy, srcc, trgg, ttalk);
       }
     })
     .catch(error => {

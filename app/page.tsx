@@ -11,9 +11,12 @@ function App() {
   useEffect(() => {
     if (!Cookies.get('win')) {
       Cookies.set('win', 0, { expires: 30 });
-      Cookies.set('loss', 0, { expires: 30 });
     } else {
       setWinCount(parseInt(Cookies.get('win')) || 0);
+    }
+    if(!Cookies.get('loss')){
+    	Cookies.set('loss', 0, { expires: 30 });
+    } else {
       setLoseCount(parseInt(Cookies.get('loss')) || 0);
     }
   }, []);
