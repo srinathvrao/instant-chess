@@ -80,7 +80,7 @@ function App() {
 }
 
 function sendToPlay(diff){
-  Cookies.set('diff',diff, {expires: 1});
+  Cookies.set('diff',diff, {expires: 7});
   if (typeof window !== 'undefined') window.location.href += "/play";
 }
 
