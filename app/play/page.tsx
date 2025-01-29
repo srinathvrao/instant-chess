@@ -10,6 +10,9 @@ const App: React.FC = () => {
   const [gameState, setGameState] = useState<string | null>(null);
   let [stockfishChat, setChat] = useState("Your move. Good luck!");
 
+  if(!Cookies.get('diff'))
+    Cookies.set('diff',2, {expires: 7});
+
   useEffect(() => {
     const savedGame = Cookies.get("gameInfo");
     if (savedGame) {
@@ -149,12 +152,13 @@ if(loser == 'w'){
 }
 
 async function makeAImove(dropAI, gameCopy, cpiece){
+  let diffLvl = Cookies.get("diff");
   await fetch('https://6zgfq4kzwc.execute-api.us-east-2.amazonaws.com/prod', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ fen: gameCopy.fen(), piece: "a,b,"+cpiece }),
+    body: JSON.stringify({ fen: gameCopy.fen(), piece: cpiece, diff: diffLvl }),
   })
     .then(response => response.json())
     .then(data => {
