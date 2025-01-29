@@ -1,109 +1,83 @@
 'use client'
 
-import { id, i, init, InstaQLEntity } from "@instantdb/react";
-import { useState } from 'react';
-import { Chess } from 'chess.js';
+import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 
-// ID for app: instant-chess
-const APP_ID = 'INSTANTDB-APP-ID'
-
-// Optional: Declare your schema for intellisense!
-const schema = i.schema({
-  entities: {
-    game: i.entity({
-      w: i.string(),
-      b: i.string(),
-      turn: i.string(),
-      fen: i.string(),
-      state: i.string(),
-      winner: i.string(),
-    }),
-  },
-});
-
-type Todo = InstaQLEntity<typeof schema, "game">;
-const db = init({ appId: APP_ID, schema });
-
 function App() { 
-  if(!Cookies.get('uData'))
-    Cookies.set('uData', JSON.stringify({"id": id()}), { expires: 3 });
-  let winCount = 0;
-  let loseCount = 0;
-  if(Cookies.get('game') && typeof window !== 'undefined')
-    window.location.href += "/play";
+  
+  const [winCount, setWinCount] = useState(0);
+  const [loseCount, setLoseCount] = useState(0);
 
-  if(Cookies.get('uData')){
-    let udata = JSON.parse(Cookies.get("uData"));
-    let uID = udata["id"];
-    let query = { game: { 
-                    $: { 
-                      where: {
-                        w:  uID,
-                        state: "end"
-                      }
-                      }}}
-    const { isLoading, error, data }  = db.useQuery(query);
-    if (data) {
-      let endData = data.game;
-      let endLen = endData.length;
-      for (let index = 0; index < endLen; index++) {
-        const element = endData[index];
-        if(element[element["winner"]] == uID) winCount++;
-        else loseCount++;
-      }
+  useEffect(() => {
+    if (!Cookies.get('win')) {
+      Cookies.set('win', 0, { expires: 30 });
+      Cookies.set('loss', 0, { expires: 30 });
+    } else {
+      setWinCount(parseInt(Cookies.get('win')) || 0);
+      setLoseCount(parseInt(Cookies.get('loss')) || 0);
     }
-  }
+  }, []);
+
+
+  if(Cookies.get('gameInfo') && typeof window !== 'undefined')
+    window.location.href += '/play';
   
   const [isHovered, setIsHovered] = useState(false);
-  const [buttonText, setButtonText] = useState("Do it. (EXTREME!)");
+  const [buttonText, setButtonText] = useState("Advanced");
+  const [isHovered2, setIsHovered2] = useState(false);
+  const [buttonText2, setButtonText2] = useState("Intermediate");
+  const [isHovered3, setIsHovered3] = useState(false);
+  const [buttonText3, setButtonText3] = useState("Beginner");
+  
+
   return (
     <div style={styles.container}>
     <div style={styles.board}>
-      <h2>Feel like challenging stockfish today?</h2>
-        <div style={styles.wrapper}>
-          <img src="/images/stockfish.png" alt="CHESSGOD.png" style={styles.img} />
-        </div>
+      <h2>Are you smarter than a fifth grader?</h2>
         <br></br>
         <a
           href="play"
           style={isHovered ? { ...styles.button, ...styles.hover } : styles.button}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          onClick={() => { setButtonText("You've been warned."); sendToPlay()}}
+          onClick={() => { setButtonText("Good luck!"); sendToPlay(1)}}
         >
           {buttonText}
         </a>
         <br></br>
-         <h3>
-        
-          Your stats:
+        <a
+          href="play"
+          style={isHovered2 ? { ...styles.button, ...styles.hover } : styles.button}
+          onMouseEnter={() => setIsHovered2(true)}
+          onMouseLeave={() => setIsHovered2(false)}
+          onClick={() => { setButtonText2("Good luck!"); sendToPlay(2)}}
+        >
+          {buttonText2}
+        </a>
+        <br></br>
+        <a
+          href="play"
+          style={isHovered3 ? { ...styles.button, ...styles.hover } : styles.button}
+          onMouseEnter={() => setIsHovered3(true)}
+          onMouseLeave={() => setIsHovered3(false)}
+          onClick={() => { setButtonText3("Good luck!"); sendToPlay(3)}}
+        >
+          {buttonText3}
+        </a>
+        <br></br>
+          <h3>
           <br></br>
+          Wins: {winCount}
           <br></br>
-          Ws: {winCount}
-          <br></br>
-          Ls: {loseCount}
-         </h3>
+          Losses: {loseCount}
+          </h3>
   </div>
-    {/* {loseCount>0 ? <div style={styles.meme}> MEME <br/> </div> : ""} */}
-
   </div>
   );
 }
 
-function sendToPlay(){
-  let udata = JSON.parse(Cookies.get("uData"));
-  let userID = udata["id"];
-  let gameID = id();
-  Cookies.set('game', JSON.stringify({"id": gameID, "uid": userID}), { expires: 1 });
-  db.transact(db.tx.game[gameID].update({
-                                w: userID,
-                                b: "STOCKFISH",
-                                turn: "w",
-                                fen: (new Chess()).fen(),
-                                state: "inprogress",
-                                winner: "",
-                              }))
+function sendToPlay(diff){
+  Cookies.set('diff',diff, {expires: 1});
   if (typeof window !== 'undefined') window.location.href += "/play";
 }
 
