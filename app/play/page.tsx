@@ -90,7 +90,7 @@ const App: React.FC = () => {
           Reset
         </a>
         <a
-            href="https://instantgames.org"
+            href="https://instant-chess.vercel.app"
             style={isHovered2 ? { ...styles.button, ...styles.hover } : styles.button}
             onMouseEnter={() => setIsHovered2(true)}
             onMouseLeave={() => setIsHovered2(false)}
